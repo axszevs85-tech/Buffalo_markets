@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GameTopUp</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c4cff">
+<link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#f4f5f9;--card:#fff;--tx:#161823;--mu:#6b7080;--ac:#6c4cff;--bd:#e3e5ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1117;--card:#1a1d27;--tx:#f1f2f8;--mu:#9aa0b4;--ac:#8b73ff;--bd:#2a2e3d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.w{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0}
+.sub{color:var(--mu);font-size:14px;margin:0 0 16px}
+.games{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g{background:var(--card);border:2px solid var(--bd);border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;font:inherit;color:var(--tx)}
+.g.on{border-color:var(--ac)}
+.g b{display:block;font-size:30px}
+.g span{font-size:14px;font-weight:600}
+h2{font-size:16px;margin:20px 0 8px}
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:var(--tx);text-align:left}
+.p.on{border-color:var(--ac)}
+.p .a{font-weight:700;font-size:16px}
+.p .pr{color:var(--mu);font-size:14px;margin-top:2px}
+input,select{width:100%;padding:13px;border-radius:12px;border:2px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;font-size:16px}
+.btn{width:100%;margin-top:18px;padding:15px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.45}
+.note{font-size:12px;color:var(--mu);margin-top:14px;line-height:1.5}
+.tot{display:flex;justify-content:space-between;margin-top:16px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>🎮 O'yin valyutasini to'ldirish</h1>
+<p class="sub">O'yinni tanlang, miqdorni belgilang va buyurtma bering.</p>
+<div class="games" id="games"></div>
+<h2 id="ptitle">Miqdorni tanlang</h2>
+<div class="packs" id="packs"></div>
+<h2 id="idlabel">O'yinchi ID</h2>
+<input id="pid" inputmode="text" placeholder="ID kiriting" autocomplete="off">
+<h2>To'lov usuli</h2>
+<select id="pay"></select>
+<p class="note" id="payinfo"></p>
+<div class="tot"><span>Jami:</span><span id="total">—</span></div>
+<button class="btn" id="go" disabled>Telegram orqali buyurtma berish</button>
+<p class="note">Faqat ID so'raladi. Parol yoki kod hech qachon so'ralmaydi va ularni hech kimga bermang.</p>
+</div>
+<script>
+var ADMIN="your_username";
+var CUR="so'm";
+var GAMES=[
+{id:"pubg",icon:"🔫",name:"PUBG Mobile",unit:"UC",idl:"PUBG ID",packs:[[60,12000],[325,60000],[660,120000],[1800,300000]]},
+{id:"coc",icon:"💎",name:"Clash of Clans",unit:"💎",idl:"Player Tag (#...)",packs:[[80,15000],[500,75000],[1200,150000],[2500,290000]]},
+{id:"cs2",icon:"🎯",name:"CS2",unit:"Steam hamyon",idl:"Steam login / do'stlik havolasi",packs:[[5,65000],[10,125000],[20,245000],[50,600000]],pre:"$"},
+{id:"efb",icon:"⚽",name:"eFootball",unit:"coin",idl:"eFootball ID",packs:[[130,25000],[300,55000],[750,130000],[1600,270000]]},
+{id:"stars",icon:"⭐",name:"Telegram Stars",unit:"⭐",idl:"Telegram username (@...)",packs:[[50,17000],[100,33000],[250,80000],[500,157000]]},
+{id:"prem",icon:"💜",name:"Telegram Premium",unit:"oy",idl:"Telegram username (@...)",packs:[[1,55000],[3,190000],[6,260000],[12,450000]]}
+];
+var PAY={"Click":"Click: +998 XX XXX XX XX","Payme":"Payme: +998 XX XXX XX XX","Karta (Uzcard/Humo)":"Karta: 8600 XXXX XXXX XXXX (Ism Familiya)"};
+var sel=document.getElementById("pay");
+Object.keys(PAY).forEach(function(k){var o=document.createElement("option");o.textContent=k;sel.appendChild(o)});
+function showPay(){document.getElementById("payinfo").textContent=PAY[sel.value]+". Buyurtmadan so'ng to'lov qilib, chekni yuboring."}
+sel.onchange=showPay;showPay();
+var g=GAMES[0],pk=null;
+function fmt(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g," ")}
+function lab(p){return g.pre?g.pre+p[0]+" "+g.unit:p[0]+" "+g.unit}
+function drawGames(){
+ var el=document.getElementById("games");el.innerHTML="";
+ GAMES.forEach(function(x){
+  var b=document.createElement("button");b.className="g"+(x===g?" on":"");
+  b.innerHTML="<b>"+x.icon+"</b><span>"+x.name+"</span>";
+  b.onclick=function(){g=x;pk=null;drawAll()};el.appendChild(b)})}
+function drawPacks(){
+ var el=document.getElementById("packs");el.innerHTML="";
+ g.packs.forEach(function(p){
+  var b=document.createElement("button");b.className="p"+(p===pk?" on":"");
+  b.innerHTML='<div class="a">'+lab(p)+'</div><div class="pr">'+fmt(p[1])+" "+CUR+"</div>";
+  b.onclick=function(){pk=p;drawAll()};el.appendChild(b)})}
+function upd(){
+ document.getElementById("idlabel").textContent=g.idl;
+ document.getElementById("pid").placeholder=g.idl+" kiriting";
+ document.getElementById("total").textContent=pk?fmt(pk[1])+" "+CUR:"—";
+ document.getElementById("go").disabled=!(pk&&document.getElementById("pid").value.trim())}
+function drawAll(){drawGames(
